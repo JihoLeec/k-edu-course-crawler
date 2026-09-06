@@ -398,14 +398,7 @@ def fetch_details(
     return rows
 
 
-def write_excel(template: Path, output: Path, rows: list[CourseRow]) -> None:
-    shutil.copy2(template, output)
-    wb = openpyxl.load_workbook(output)
-    ws = wb[SHEET_NAME]
-
-    if ws.max_row > 1:
-        ws.delete_rows(2, ws.max_row - 1)
-
+def _append_rows(ws, rows: list[CourseRow]) -> None:
     for idx, row in enumerate(rows, start=1):
         ws.append(
             [
@@ -424,6 +417,27 @@ def write_excel(template: Path, output: Path, rows: list[CourseRow]) -> None:
             ]
         )
 
+
+def write_excel(template: Path | None, output: Path, rows: list[CourseRow]) -> None:
+    if template and template.exists():
+        shutil.copy2(template, output)
+        wb = openpyxl.load_workbook(output)
+        if SHEET_NAME in wb.sheetnames:
+            ws = wb[SHEET_NAME]
+            if ws.max_row > 1:
+                ws.delete_rows(2, ws.max_row - 1)
+        else:
+            ws = wb.create_sheet(SHEET_NAME, 0)
+            ws.append(list(EXCEL_COLUMNS))
+        log.info("템플릿 사용: %s", template)
+    else:
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = SHEET_NAME
+        ws.append(list(EXCEL_COLUMNS))
+        log.info("템플릿 없음 — KOCW 시트만 새로 생성")
+
+    _append_rows(ws, rows)
     wb.save(output)
     wb.close()
 
@@ -482,7 +496,7 @@ def main() -> None:
     parser.add_argument(
         "--template",
         default=TEMPLATE_FILE,
-        help="양식 엑셀 파일 경로",
+        help="양식 엑셀 파일 경로 (없으면 KOCW 시트만 새로 생성)",
     )
     parser.add_argument(
         "--output",
@@ -521,9 +535,10 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
     )
 
-    template = Path(args.template)
-    if not template.exists():
-        raise SystemExit(f"양식 파일을 찾을 수 없습니다: {template}")
+    template_path = Path(args.template)
+    template: Path | None = template_path if template_path.exists() else None
+    if template is None:
+        log.warning("템플릿 없음 (%s) — KOCW 시트만 생성합니다", template_path)
 
     output = Path(
         args.output
