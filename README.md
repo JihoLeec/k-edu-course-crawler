@@ -3,7 +3,7 @@
 강의 공개 사이트 데이터를 엑셀 양식에 맞춰 모아 주는 작은 토이 프로젝트입니다.
 
 <p align="center">
-  <img src="docs/crawler-kocw.png" alt="웹 화면" height="240" />
+  <img src="docs/crawler-kocw.png" alt="웹 화면" height="480" />
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/crawler-result.png" alt="결과 엑셀" height="240" />
+  <img src="docs/crawler-result.png" alt="결과 엑셀" height="480" />
 </p>
 
 ## 제작 배경
