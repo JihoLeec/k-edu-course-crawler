@@ -24,8 +24,9 @@
 | 대상 | 스크립트 | 결과 시트 |
 |------|----------|-----------|
 | [KOCW](https://www.kocw.net/home/index.do) 대학강의·기관강의 | `crawl_kocw.py` | `KOCW` |
+| [K-MOOC](https://www.kmooc.kr/view/course) 강좌 | `crawl_kmooc.py` | `K-MOOC` |
 
-### KOCW 시트 컬럼
+### 시트 컬럼
 
 순번 · 출처(제작사) · 대메뉴 · 중분류 · 세분류(전공분류) · 상태 · 콘텐츠명 · 강좌수 · 강의목차 · 강사명 · URL · 비고
 
@@ -56,19 +57,36 @@ python crawl_kocw.py --limit 3
 
 결과는 `KOCW_크롤링결과_날짜시간.xlsx`로 저장됩니다.
 
+## 사용법 (K-MOOC)
+
+```bash
+source .venv/bin/activate
+
+# 전체
+python crawl_kmooc.py --workers 2 --delay 0.5
+
+# 테스트 (N건만)
+python crawl_kmooc.py --limit 3
+```
+
+결과는 `KMOOC_크롤링결과_날짜시간.xlsx`로 저장됩니다.
+
 ### 캐시
 
 재실행 시 이미 받은 데이터는 건너뜁니다.
 
 | 파일 | 역할 |
 |------|------|
-| `.cache/kocw_stubs.json` | 강의 목록 (URL·제목 등) |
-| `.cache/kocw_details.json` | 상세 페이지 (분류·목차 등) |
+| `.cache/kocw_stubs.json` | KOCW 강의 목록 |
+| `.cache/kocw_details.json` | KOCW 상세 |
+| `.cache/kmooc_stubs.json` | K-MOOC 강좌 목록 |
+| `.cache/kmooc_details.json` | K-MOOC 상세 |
 
 목록을 처음부터 다시 받으려면:
 
 ```bash
 python crawl_kocw.py --refresh-listing --workers 2 --delay 0.5
+python crawl_kmooc.py --refresh-listing --workers 2 --delay 0.5
 ```
 
 상세 수집에 실패한 행은 엑셀 `비고`에 `상세수집실패`로 남고, 다음 실행 때 그 건만 다시 시도합니다.
