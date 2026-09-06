@@ -7,7 +7,6 @@ import argparse
 import json
 import logging
 import re
-import shutil
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass
@@ -43,7 +42,6 @@ EXCEL_COLUMNS = (
     "URL",
     "비고",
 )
-TEMPLATE_FILE = "제발정신차려 이걸 날리면 어떡하니.xlsx"
 SHEET_NAME = "KOCW"
 
 log = logging.getLogger(__name__)
@@ -398,7 +396,12 @@ def fetch_details(
     return rows
 
 
-def _append_rows(ws, rows: list[CourseRow]) -> None:
+def write_excel(output: Path, rows: list[CourseRow]) -> None:
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = SHEET_NAME
+    ws.append(list(EXCEL_COLUMNS))
+
     for idx, row in enumerate(rows, start=1):
         ws.append(
             [
@@ -417,27 +420,6 @@ def _append_rows(ws, rows: list[CourseRow]) -> None:
             ]
         )
 
-
-def write_excel(template: Path | None, output: Path, rows: list[CourseRow]) -> None:
-    if template and template.exists():
-        shutil.copy2(template, output)
-        wb = openpyxl.load_workbook(output)
-        if SHEET_NAME in wb.sheetnames:
-            ws = wb[SHEET_NAME]
-            if ws.max_row > 1:
-                ws.delete_rows(2, ws.max_row - 1)
-        else:
-            ws = wb.create_sheet(SHEET_NAME, 0)
-            ws.append(list(EXCEL_COLUMNS))
-        log.info("템플릿 사용: %s", template)
-    else:
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = SHEET_NAME
-        ws.append(list(EXCEL_COLUMNS))
-        log.info("템플릿 없음 — KOCW 시트만 새로 생성")
-
-    _append_rows(ws, rows)
     wb.save(output)
     wb.close()
 
@@ -494,11 +476,6 @@ def collect_stubs(client: KocwClient, menus: set[str], limit: int = 0) -> list[C
 def main() -> None:
     parser = argparse.ArgumentParser(description="KOCW 강의 크롤러")
     parser.add_argument(
-        "--template",
-        default=TEMPLATE_FILE,
-        help="양식 엑셀 파일 경로 (없으면 KOCW 시트만 새로 생성)",
-    )
-    parser.add_argument(
         "--output",
         default=None,
         help="결과 엑셀 파일 경로 (기본: KOCW_크롤링결과_날짜.xlsx)",
@@ -535,11 +512,6 @@ def main() -> None:
         format="%(asctime)s %(levelname)s %(message)s",
     )
 
-    template_path = Path(args.template)
-    template: Path | None = template_path if template_path.exists() else None
-    if template is None:
-        log.warning("템플릿 없음 (%s) — KOCW 시트만 생성합니다", template_path)
-
     output = Path(
         args.output
         or f"KOCW_크롤링결과_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
@@ -564,7 +536,7 @@ def main() -> None:
     log.info("목록 준비 완료: %s건", len(stubs))
 
     rows = fetch_details(client, stubs, cache_path, args.workers)
-    write_excel(template, output, rows)
+    write_excel(output, rows)
     log.info("저장 완료: %s (%s건)", output, len(rows))
 
 
